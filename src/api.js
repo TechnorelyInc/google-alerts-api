@@ -10,8 +10,11 @@ let state = null;
 const ERROR = {
     AUTHENTICATION: 'authentication issue',
     ALERTS_FETCH: 'alert retriving issue',
-    CONFIGURATION: 'no mail/pass specified'
+    CONFIGURATION: 'no mail/pass specified',
+    ALERT_EXISTS: 'This alert is already active for your account. Dismiss.'
 };
+
+const HREF_REG_EXP = /href=(["'])(.*?)\1/;
 
 function getCookies() {
     const str = JSON.stringify(reqHandler.getCookies());
@@ -117,9 +120,14 @@ function create(createData, cb) {
         if(err) return cb(err);
         try {
             const parsedBody = JSON.parse(body);
-            let alert = parsedBody[4][0]; 
+            if (!parsedBody[4]) {
+                return cb(ERROR.ALERT_EXISTS);
+            }
+            let alert = parsedBody[4][0];
             const id = alert[1];
-            cb(null, { ...createData, id});
+            const feed = alert[2];
+            const rss = `https://google.com${feed.match(HREF_REG_EXP)[2]}`;
+            cb(null, { ...createData, id, rss});
         }catch(e) {
             cb(e);
         }
